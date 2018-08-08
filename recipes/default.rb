@@ -1,7 +1,13 @@
 
 platform = node['platform']
 
-if platform == "centos"
+if platform == "centos" || platform == "fedora"
+  package "firewalld" do
+    action :remove
+  end
+end
+
+if platform == "centos" || platform == "fedora"
   %w(httpd mariadb mariadb-server).each do |p|
     package p do
       action :install
@@ -15,19 +21,27 @@ elsif platform == "ubuntu"
   end
 end
   
-if platform == "centos"
+if platform == "centos" 
   execute 'Epel Release' do
     not_if "rpm -qa | grep -i 'epel'"
     command 'rpm -Uvh https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm'
   end
-
   execute 'Webtatic Release' do
     not_if "rpm -qa | grep -i 'webtatic'"
     command 'rpm -Uvh https://mirror.webtatic.com/yum/el7/webtatic-release.rpm'
   end
+elsif platform == "fedora"
+  execute 'Epel Release' do
+    not_if "rpm -qa | grep -i 'epel'"
+    command 'yum install -y --allowerasing https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm'
+  end
+  execute 'Webtatic Release' do
+    not_if "rpm -qa | grep -i 'webtatic'"
+    command 'yum install -y --allowerasing https://mirror.webtatic.com/yum/el7/webtatic-release.rpm'
+  end
 end
 
-if platform == "centos"
+if platform == "centos" || platform == "fedora"
   execute 'makecache' do
     command 'yum makecache'
   end
@@ -37,7 +51,7 @@ elsif platform == "ubuntu"
   end
 end
 
-if platform == "centos"
+if platform == "centos" || platform == "fedora"
   %w(mod_php71w.x86_64 php71w-cli.x86_64 php71w-common.x86_64 php71w-gd.x86_64 php71w-mbstring.x86_64 php71w-mcrypt.x86_64 php71w-mysqlnd.x86_64 php71w-xml.x86_64).each do |p|
     package p do
       action :install
@@ -86,7 +100,7 @@ if platform == "ubuntu"
   end
 end
 
-if platform == "centos"
+if platform == "centos" || platform == "fedora"
   service 'httpd' do
     action [:start, :enable]
   end
@@ -140,19 +154,13 @@ cookbook_file '/tmp/create_tables.sql' do
   source 'create_tables.sql'
 end
 
-if platform == "centos "
-  package "firewalld" do
-    action :remove
-  end
-end
-
-if platform == "centos"
+if platform == "centos" || platform == "fedora"
   execute "Open up MariaDB" do
     command 'perl -pi -e "s/#bind-address=0.0.0.0/bind-address=0.0.0.0/g" /etc/my.cnf.d/mariadb-server.cnf'
   end
 end
 
-if platform == "centos"
+if platform == "centos" || platform == "fedora"
   service "mariadb" do
     action [:start,:enable]
   end
@@ -172,9 +180,9 @@ execute "create database setup users" do
   not_if {File.exists?("/tmp/pma")}
 end
 
-if platform == "centos"
+if platform == "centos" || platform == "fedora"
   execute "allow httpd and mysql connect" do
-      command 'setsebool -P httpd_can_network_connect_db 1 && setsebool -P allow_user_mysql_connect 1'
+    command 'setsebool -P httpd_can_network_connect_db 1 && setsebool -P allow_user_mysql_connect 1'
   end
 end
 
